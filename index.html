@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image Viewer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #0f0f0f;
+      color: #e0e0e0;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 24px;
+      font-weight: 600;
+      font-size: 1.6rem;
+      color: #fff;
+    }
+
+    /* Drop Zone */
+    #drop-zone {
+      border: 2px dashed #555;
+      border-radius: 12px;
+      padding: 48px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      margin-bottom: 32px;
+      max-width: 720px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    #drop-zone.drag-over {
+      border-color: #6ea8fe;
+      background: rgba(110, 168, 254, 0.08);
+    }
+
+    #drop-zone p {
+      font-size: 1.1rem;
+      color: #999;
+      pointer-events: none;
+    }
+
+    #drop-zone p span {
+      color: #6ea8fe;
+      text-decoration: underline;
+    }
+
+    #file-input { display: none; }
+
+    /* Thumbnail Grid */
+    #gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 12px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .thumb {
+      aspect-ratio: 1;
+      border-radius: 8px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      background: #1a1a1a;
+    }
+
+    .thumb:hover {
+      transform: scale(1.04);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+
+    .thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* Lightbox */
+    #lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.92);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #lightbox.active {
+      display: flex;
+    }
+
+    #lightbox img {
+      max-width: 90vw;
+      max-height: 85vh;
+      object-fit: contain;
+      border-radius: 4px;
+      user-select: none;
+    }
+
+    .lb-btn {
+      position: absolute;
+      background: rgba(255,255,255,0.1);
+      border: none;
+      color: #fff;
+      font-size: 2rem;
+      cursor: pointer;
+      padding: 12px 16px;
+      border-radius: 8px;
+      transition: background 0.15s;
+      line-height: 1;
+    }
+
+    .lb-btn:hover { background: rgba(255,255,255,0.25); }
+
+    #lb-close { top: 16px; right: 16px; font-size: 1.6rem; }
+    #lb-prev  { left: 16px; top: 50%; transform: translateY(-50%); }
+    #lb-next  { right: 16px; top: 50%; transform: translateY(-50%); }
+
+    #lb-counter {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: rgba(255,255,255,0.6);
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Image Viewer</h1>
+
+  <div id="drop-zone">
+    <p>Drag &amp; drop images here or <span>click to browse</span></p>
+  </div>
+  <input type="file" id="file-input" multiple accept="image/*">
+
+  <div id="gallery"></div>
+
+  <div id="lightbox">
+    <button class="lb-btn" id="lb-close">&times;</button>
+    <button class="lb-btn" id="lb-prev">&#8249;</button>
+    <img id="lb-img" src="" alt="">
+    <button class="lb-btn" id="lb-next">&#8250;</button>
+    <div id="lb-counter"></div>
+  </div>
+
+  <script>
+    const images = [];
+    let currentIndex = 0;
+
+    const dropZone  = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const gallery   = document.getElementById('gallery');
+    const lightbox  = document.getElementById('lightbox');
+    const lbImg     = document.getElementById('lb-img');
+    const lbCounter = document.getElementById('lb-counter');
+
+    // --- Drop Zone ---
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('drag-over');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('drag-over');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      handleFiles(e.dataTransfer.files);
+    });
+
+    fileInput.addEventListener('change', () => {
+      handleFiles(fileInput.files);
+      fileInput.value = '';
+    });
+
+    function handleFiles(files) {
+      for (const file of files) {
+        if (!file.type.startsWith('image/')) continue;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          images.push({ src: e.target.result, name: file.name });
+          addThumbnail(images.length - 1);
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function addThumbnail(index) {
+      const div = document.createElement('div');
+      div.className = 'thumb';
+      const img = document.createElement('img');
+      img.src = images[index].src;
+      img.alt = images[index].name;
+      div.appendChild(img);
+      div.addEventListener('click', () => openLightbox(index));
+      gallery.appendChild(div);
+    }
+
+    // --- Lightbox ---
+    function openLightbox(index) {
+      currentIndex = index;
+      updateLightbox();
+      lightbox.classList.add('active');
+    }
+
+    function closeLightbox() {
+      lightbox.classList.remove('active');
+    }
+
+    function updateLightbox() {
+      lbImg.src = images[currentIndex].src;
+      lbImg.alt = images[currentIndex].name;
+      lbCounter.textContent = `${currentIndex + 1} / ${images.length}`;
+    }
+
+    function navigate(delta) {
+      currentIndex = (currentIndex + delta + images.length) % images.length;
+      updateLightbox();
+    }
+
+    document.getElementById('lb-close').addEventListener('click', closeLightbox);
+    document.getElementById('lb-prev').addEventListener('click', () => navigate(-1));
+    document.getElementById('lb-next').addEventListener('click', () => navigate(1));
+
+    lightbox.addEventListener('click', (e) => {
+      if (e.target === lightbox) closeLightbox();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (!lightbox.classList.contains('active')) return;
+      if (e.key === 'Escape')      closeLightbox();
+      if (e.key === 'ArrowLeft')   navigate(-1);
+      if (e.key === 'ArrowRight')  navigate(1);
+    });
+  </script>
+</body>
+</html>
