@@ -4,78 +4,139 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Image Viewer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background: #0f0f0f;
-      color: #e0e0e0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #09090b;
+      background-image: radial-gradient(ellipse at 50% 0%, rgba(88, 80, 236, 0.08) 0%, transparent 60%);
+      color: #e4e4e7;
       min-height: 100vh;
-      padding: 24px;
+      padding: 40px 24px;
+      scroll-behavior: smooth;
     }
 
-    h1 {
+    /* --- Header --- */
+    header {
       text-align: center;
-      margin-bottom: 24px;
-      font-weight: 600;
-      font-size: 1.6rem;
-      color: #fff;
+      margin-bottom: 40px;
     }
 
-    /* Drop Zone */
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #e4e4e7 0%, #a1a1aa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    header p {
+      color: #71717a;
+      font-size: 0.95rem;
+      margin-top: 6px;
+      font-weight: 400;
+    }
+
+    /* --- Drop Zone --- */
     #drop-zone {
-      border: 2px dashed #555;
-      border-radius: 12px;
-      padding: 48px 24px;
+      position: relative;
+      border: 1.5px dashed #27272a;
+      border-radius: 20px;
+      padding: 56px 24px;
       text-align: center;
       cursor: pointer;
-      transition: border-color 0.2s, background 0.2s;
-      margin-bottom: 32px;
-      max-width: 720px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      margin-bottom: 40px;
+      max-width: 640px;
       margin-left: auto;
       margin-right: auto;
+      background: rgba(24, 24, 27, 0.5);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    #drop-zone:hover {
+      border-color: #3f3f46;
+      background: rgba(24, 24, 27, 0.7);
     }
 
     #drop-zone.drag-over {
-      border-color: #6ea8fe;
-      background: rgba(110, 168, 254, 0.08);
+      border-color: #7c3aed;
+      background: rgba(124, 58, 237, 0.06);
+      box-shadow: 0 0 40px rgba(124, 58, 237, 0.1), inset 0 0 40px rgba(124, 58, 237, 0.03);
+      transform: scale(1.01);
     }
 
-    #drop-zone p {
-      font-size: 1.1rem;
-      color: #999;
+    .drop-icon {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 16px;
+      color: #52525b;
+      transition: color 0.3s, transform 0.3s;
+    }
+
+    #drop-zone:hover .drop-icon { color: #71717a; }
+    #drop-zone.drag-over .drop-icon { color: #7c3aed; transform: translateY(-4px); }
+
+    #drop-zone .drop-text {
+      font-size: 0.95rem;
+      color: #71717a;
       pointer-events: none;
+      line-height: 1.6;
     }
 
-    #drop-zone p span {
-      color: #6ea8fe;
-      text-decoration: underline;
+    #drop-zone .drop-text strong {
+      color: #a78bfa;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    #drop-zone .drop-hint {
+      font-size: 0.8rem;
+      color: #3f3f46;
+      margin-top: 8px;
+      pointer-events: none;
     }
 
     #file-input { display: none; }
 
-    /* Thumbnail Grid */
+    /* --- Gallery --- */
     #gallery {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
       max-width: 1200px;
       margin: 0 auto;
     }
 
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(16px) scale(0.96); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
     .thumb {
       aspect-ratio: 1;
-      border-radius: 8px;
+      border-radius: 12px;
       overflow: hidden;
       cursor: pointer;
-      transition: transform 0.15s, box-shadow 0.15s;
-      background: #1a1a1a;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                  box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      background: #18181b;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.04), 0 2px 8px rgba(0,0,0,0.3);
+      animation: fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) backwards;
     }
 
     .thumb:hover {
-      transform: scale(1.04);
-      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      transform: scale(1.05) translateY(-4px);
+      box-shadow: 0 0 0 1px rgba(124, 58, 237, 0.2),
+                  0 12px 40px rgba(0,0,0,0.5),
+                  0 0 20px rgba(124, 58, 237, 0.08);
     }
 
     .thumb img {
@@ -83,69 +144,180 @@
       height: 100%;
       object-fit: cover;
       display: block;
+      transition: filter 0.3s;
     }
 
-    /* Lightbox */
+    .thumb:hover img {
+      filter: brightness(1.1);
+    }
+
+    /* --- Lightbox --- */
     #lightbox {
-      display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.92);
+      background: rgba(0, 0, 0, 0.88);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                  visibility 0.3s;
+    }
+
+    #lightbox.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    #lb-img {
+      max-width: 88vw;
+      max-height: 78vh;
+      object-fit: contain;
+      border-radius: 8px;
+      user-select: none;
+      transition: opacity 0.25s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+    }
+
+    #lightbox.active #lb-img {
+      transform: scale(1);
+    }
+
+    #lb-img.fading {
+      opacity: 0;
+      transform: scale(0.97);
+    }
+
+    #lb-name {
+      color: #a1a1aa;
+      font-size: 0.8rem;
+      margin-top: 16px;
+      max-width: 400px;
+      text-align: center;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      transition: opacity 0.25s;
+    }
+
+    #lb-name.fading { opacity: 0; }
+
+    .lb-btn {
+      position: absolute;
+      background: rgba(255,255,255,0.06);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.06);
+      color: #d4d4d8;
+      cursor: pointer;
+      border-radius: 50%;
+      transition: all 0.2s ease;
+      display: flex;
       align-items: center;
       justify-content: center;
     }
 
-    #lightbox.active {
-      display: flex;
-    }
-
-    #lightbox img {
-      max-width: 90vw;
-      max-height: 85vh;
-      object-fit: contain;
-      border-radius: 4px;
-      user-select: none;
-    }
-
-    .lb-btn {
-      position: absolute;
-      background: rgba(255,255,255,0.1);
-      border: none;
+    .lb-btn:hover {
+      background: rgba(255,255,255,0.12);
       color: #fff;
-      font-size: 2rem;
-      cursor: pointer;
-      padding: 12px 16px;
-      border-radius: 8px;
-      transition: background 0.15s;
+      transform: scale(1.08);
+    }
+
+    .lb-btn:focus-visible {
+      outline: 2px solid #7c3aed;
+      outline-offset: 2px;
+    }
+
+    #lb-close {
+      top: 20px;
+      right: 20px;
+      width: 40px;
+      height: 40px;
+      font-size: 1.3rem;
       line-height: 1;
     }
 
-    .lb-btn:hover { background: rgba(255,255,255,0.25); }
+    #lb-prev, #lb-next {
+      top: 50%;
+      transform: translateY(-50%);
+      width: 48px;
+      height: 48px;
+      font-size: 1.4rem;
+    }
 
-    #lb-close { top: 16px; right: 16px; font-size: 1.6rem; }
-    #lb-prev  { left: 16px; top: 50%; transform: translateY(-50%); }
-    #lb-next  { right: 16px; top: 50%; transform: translateY(-50%); }
+    #lb-prev:hover, #lb-next:hover {
+      transform: translateY(-50%) scale(1.08);
+    }
+
+    #lb-prev { left: 20px; }
+    #lb-next { right: 20px; }
 
     #lb-counter {
       position: absolute;
-      bottom: 20px;
+      bottom: 24px;
       left: 50%;
       transform: translateX(-50%);
-      color: rgba(255,255,255,0.6);
+      color: rgba(255,255,255,0.4);
+      font-size: 0.78rem;
+      font-weight: 500;
+      background: rgba(255,255,255,0.06);
+      padding: 6px 16px;
+      border-radius: 100px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.05);
+      letter-spacing: 0.05em;
+    }
+
+    /* --- Empty State --- */
+    #empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #3f3f46;
       font-size: 0.9rem;
+      display: none;
+    }
+
+    #empty-state.visible { display: block; }
+
+    /* --- Responsive --- */
+    @media (max-width: 640px) {
+      body { padding: 20px 16px; }
+      header h1 { font-size: 1.5rem; }
+      #drop-zone { padding: 40px 20px; border-radius: 16px; }
+      #gallery { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+      .thumb { border-radius: 10px; }
+      #lb-prev, #lb-next { width: 40px; height: 40px; font-size: 1.2rem; }
+      #lb-prev { left: 10px; }
+      #lb-next { right: 10px; }
+      #lb-close { top: 12px; right: 12px; }
     }
   </style>
 </head>
 <body>
 
-  <h1>Image Viewer</h1>
+  <header>
+    <h1>Image Viewer</h1>
+    <p>Drop your images to explore them in a beautiful gallery</p>
+  </header>
 
   <div id="drop-zone">
-    <p>Drag &amp; drop images here or <span>click to browse</span></p>
+    <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="17 8 12 3 7 8"/>
+      <line x1="12" y1="3" x2="12" y2="15"/>
+    </svg>
+    <p class="drop-text">Drag &amp; drop images here or <strong>browse files</strong></p>
+    <p class="drop-hint">Supports JPG, PNG, GIF, WebP, SVG</p>
   </div>
   <input type="file" id="file-input" multiple accept="image/*">
 
+  <div id="empty-state" class="visible">No images yet — drop some above to get started</div>
   <div id="gallery"></div>
 
   <div id="lightbox">
@@ -153,6 +325,7 @@
     <button class="lb-btn" id="lb-prev">&#8249;</button>
     <img id="lb-img" src="" alt="">
     <button class="lb-btn" id="lb-next">&#8250;</button>
+    <div id="lb-name"></div>
     <div id="lb-counter"></div>
   </div>
 
@@ -160,12 +333,14 @@
     const images = [];
     let currentIndex = 0;
 
-    const dropZone  = document.getElementById('drop-zone');
-    const fileInput = document.getElementById('file-input');
-    const gallery   = document.getElementById('gallery');
-    const lightbox  = document.getElementById('lightbox');
-    const lbImg     = document.getElementById('lb-img');
-    const lbCounter = document.getElementById('lb-counter');
+    const dropZone   = document.getElementById('drop-zone');
+    const fileInput  = document.getElementById('file-input');
+    const gallery    = document.getElementById('gallery');
+    const lightbox   = document.getElementById('lightbox');
+    const lbImg      = document.getElementById('lb-img');
+    const lbName     = document.getElementById('lb-name');
+    const lbCounter  = document.getElementById('lb-counter');
+    const emptyState = document.getElementById('empty-state');
 
     // --- Drop Zone ---
     dropZone.addEventListener('click', () => fileInput.click());
@@ -197,17 +372,22 @@
         reader.onload = (e) => {
           images.push({ src: e.target.result, name: file.name });
           addThumbnail(images.length - 1);
+          emptyState.classList.remove('visible');
         };
         reader.readAsDataURL(file);
       }
     }
 
+    let thumbCount = 0;
     function addThumbnail(index) {
       const div = document.createElement('div');
       div.className = 'thumb';
+      div.style.animationDelay = `${thumbCount * 0.06}s`;
+      thumbCount++;
       const img = document.createElement('img');
       img.src = images[index].src;
       img.alt = images[index].name;
+      img.loading = 'lazy';
       div.appendChild(img);
       div.addEventListener('click', () => openLightbox(index));
       gallery.appendChild(div);
@@ -216,23 +396,32 @@
     // --- Lightbox ---
     function openLightbox(index) {
       currentIndex = index;
-      updateLightbox();
+      showImage();
       lightbox.classList.add('active');
+      document.body.style.overflow = 'hidden';
     }
 
     function closeLightbox() {
       lightbox.classList.remove('active');
+      document.body.style.overflow = '';
     }
 
-    function updateLightbox() {
+    function showImage() {
       lbImg.src = images[currentIndex].src;
       lbImg.alt = images[currentIndex].name;
+      lbName.textContent = images[currentIndex].name;
       lbCounter.textContent = `${currentIndex + 1} / ${images.length}`;
     }
 
     function navigate(delta) {
-      currentIndex = (currentIndex + delta + images.length) % images.length;
-      updateLightbox();
+      lbImg.classList.add('fading');
+      lbName.classList.add('fading');
+      setTimeout(() => {
+        currentIndex = (currentIndex + delta + images.length) % images.length;
+        showImage();
+        lbImg.classList.remove('fading');
+        lbName.classList.remove('fading');
+      }, 200);
     }
 
     document.getElementById('lb-close').addEventListener('click', closeLightbox);
